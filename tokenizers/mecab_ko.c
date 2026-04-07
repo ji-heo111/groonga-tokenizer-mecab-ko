@@ -498,6 +498,7 @@ mecab_ko_model_create(grn_ctx *ctx, grn_mecab_ko_tokenizer_options *options)
     argv[argc++] = "-E\n";
   }
 
+  mecab_model = mecab_model_new(argc, (char **)argv);
   if (!mecab_model) {
     if (need_default_output) {
       GRN_PLUGIN_ERROR(ctx,
@@ -1208,12 +1209,14 @@ check_mecab_ko_dictionary_encoding(grn_ctx *ctx)
   }
   mecab = mecab_model_new_tagger(mecab_model);
   if (!mecab) {
+    mecab_model_destroy(mecab_model);
     return;
   }
 
   encoding = GRN_CTX_GET_ENCODING(ctx);
   have_same_encoding_dictionary = (encoding == get_mecab_ko_encoding(mecab));
   mecab_destroy(mecab);
+  mecab_model_destroy(mecab_model);
 
   if (!have_same_encoding_dictionary) {
     GRN_PLUGIN_ERROR(ctx,
