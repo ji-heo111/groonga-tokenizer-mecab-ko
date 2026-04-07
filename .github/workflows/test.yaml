@@ -49,7 +49,8 @@ jobs:
             build-essential \
             ccache \
             cmake \
-            ninja-build
+            ninja-build \
+            ruby-dev
       - name: Install Groonga
         run: |
           sudo apt install -y -V ca-certificates lsb-release wget
@@ -58,6 +59,7 @@ jobs:
             ./groonga-apt-source-latest-$(lsb_release --codename --short).deb
           sudo apt update
           sudo apt install -y -V \
+            groonga \
             libgroonga-dev
       - name: Install mecab-ko
         run: |
@@ -75,6 +77,10 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           sudo make install
+          # groonga 패키지가 일본어 사전(mecab-ipadic)을 함께 설치하므로
+          # mecabrc의 dicdir을 mecab-ko-dic으로 덮어씀
+          sudo sed -i 's|^dicdir.*|dicdir = /usr/lib/mecab/dic/mecab-ko-dic|' \
+            /usr/etc/mecabrc /etc/mecabrc 2>/dev/null || true
       - name: CMake
         run: |
           cmake -S . -B build -GNinja \
@@ -90,8 +96,7 @@ jobs:
           sudo gem install grntest
       - name: Test
         run: |
-          cd build
-          ../test/run.sh
+          BUILD_DIR="$(pwd)/build" test/run.sh
   debian:
     name: Debian bookworm
     runs-on: ubuntu-latest
@@ -119,6 +124,7 @@ jobs:
             ./groonga-apt-source-latest-bookworm.deb
           apt update
           apt install -y -V \
+            groonga \
             libgroonga-dev
       - name: Install mecab-ko
         run: |
@@ -150,8 +156,7 @@ jobs:
           gem install grntest
       - name: Test
         run: |
-          cd build
-          ../test/run.sh
+          BUILD_DIR="$(pwd)/build" test/run.sh
   almalinux:
     name: AlmaLinux ${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -173,7 +178,11 @@ jobs:
         run: |
           dnf install -y epel-release
           dnf config-manager --set-enabled ${{ matrix.crb-repo }}
-          dnf install -y \
+          if [ "${{ matrix.version }}" = "8" ]; then
+            dnf module reset ruby -y
+            dnf module enable ruby:3.1 -y
+          fi
+          dnf install -y --allowerasing \
             autoconf \
             automake \
             cmake \
@@ -196,7 +205,7 @@ jobs:
         run: |
           dnf install -y \
             https://packages.groonga.org/almalinux/${{ matrix.version }}/groonga-release-latest.noarch.rpm
-          dnf install -y groonga-devel
+          dnf install -y groonga groonga-devel
       - name: Install mecab-ko
         run: |
           tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
@@ -214,6 +223,10 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           make install
+          # mecabrc의 dicdir(/usr/lib/...)과 실제 설치 경로(/usr/lib64/...)가 다를 수 있음
+          if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
+            ln -s /usr/lib64/mecab /usr/lib/mecab
+          fi
       - name: CMake
         run: |
           cmake -S . -B build -GNinja
@@ -228,8 +241,7 @@ jobs:
           gem install grntest
       - name: Test
         run: |
-          cd build
-          ../test/run.sh
+          BUILD_DIR="$(pwd)/build" test/run.sh
   amazon-linux:
     name: Amazon Linux 2023
     runs-on: ubuntu-latest
@@ -254,11 +266,15 @@ jobs:
             ninja-build \
             ruby \
             ruby-devel
+      - name: Install Apache Arrow
+        run: |
+          dnf install -y \
+            https://packages.apache.org/artifactory/arrow/amazon-linux/2023/apache-arrow-release-latest.rpm
       - name: Install Groonga
         run: |
           dnf install -y \
             https://packages.groonga.org/amazon-linux/2023/groonga-release-latest.noarch.rpm
-          dnf install -y groonga-devel
+          dnf install -y groonga groonga-devel
       - name: Install mecab-ko
         run: |
           tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
@@ -276,6 +292,10 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           make install
+          # mecabrc의 dicdir(/usr/lib/...)과 실제 설치 경로(/usr/lib64/...)가 다를 수 있음
+          if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
+            ln -s /usr/lib64/mecab /usr/lib/mecab
+          fi
       - name: CMake
         run: |
           cmake -S . -B build -GNinja
@@ -290,5 +310,4 @@ jobs:
           gem install grntest
       - name: Test
         run: |
-          cd build
-          ../test/run.sh
+          BUILD_DIR="$(pwd)/build" test/run.sh
