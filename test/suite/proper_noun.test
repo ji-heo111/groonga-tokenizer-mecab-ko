@@ -1,0 +1,3 @@
+plugin_register tokenizers/mecab_ko
+
+tokenize TokenMeCabKo '서울특별시 강남구'

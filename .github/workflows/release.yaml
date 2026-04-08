@@ -1,0 +1,558 @@
+# Copyright (C) 2026  Jinseok Heo <js.heo7747@gmail.com>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+  almalinux-8:
+    name: Build RPM (AlmaLinux 8)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    container: almalinux:8
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: |
+          dnf install -y epel-release
+          dnf config-manager --set-enabled powertools
+          dnf install -y \
+            autoconf \
+            automake \
+            cmake \
+            curl \
+            gcc \
+            gcc-c++ \
+            make \
+            ninja-build \
+            rpm-build
+      - name: Install newer CMake
+        run: |
+          curl -sL https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local
+      - name: Install Apache Arrow
+        run: |
+          dnf install -y \
+            https://packages.apache.org/artifactory/arrow/almalinux/8/apache-arrow-release-latest.rpm
+      - name: Install Groonga
+        run: |
+          dnf install -y \
+            https://packages.groonga.org/almalinux/8/groonga-release-latest.noarch.rpm
+          dnf install -y groonga groonga-devel
+      - name: Prepare rpmbuild sources
+        run: |
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
+          mkdir -p ~/rpmbuild/{SOURCES,SPECS}
+          tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --exclude=.git --exclude=build --exclude=docker \
+            .
+          cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
+          cp vendor/mecab-ko-dic-2.1.1-20180720.tar.gz ~/rpmbuild/SOURCES/
+          cp rpm/groonga-tokenizer-mecab-ko.spec ~/rpmbuild/SPECS/
+      - name: Build RPM
+        run: |
+          rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpms-almalinux-8
+          path: /tmp/out/*.rpm
+  almalinux-9:
+    name: Build RPM (AlmaLinux 9)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    container: almalinux:9
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: |
+          dnf install -y epel-release
+          dnf config-manager --set-enabled crb
+          dnf install -y --allowerasing \
+            autoconf \
+            automake \
+            cmake \
+            gcc \
+            gcc-c++ \
+            make \
+            ninja-build \
+            rpm-build
+      - name: Install Apache Arrow
+        run: |
+          dnf install -y \
+            https://apache.jfrog.io/artifactory/arrow/almalinux/9/apache-arrow-release-latest.rpm
+      - name: Install Groonga
+        run: |
+          dnf install -y \
+            https://packages.groonga.org/almalinux/9/groonga-release-latest.noarch.rpm
+          dnf install -y groonga groonga-devel
+      - name: Prepare rpmbuild sources
+        run: |
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
+          mkdir -p ~/rpmbuild/{SOURCES,SPECS}
+          tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --exclude=.git --exclude=build --exclude=docker \
+            .
+          cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
+          cp vendor/mecab-ko-dic-2.1.1-20180720.tar.gz ~/rpmbuild/SOURCES/
+          cp rpm/groonga-tokenizer-mecab-ko.spec ~/rpmbuild/SPECS/
+      - name: Build RPM
+        run: |
+          rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpms-almalinux-9
+          path: /tmp/out/*.rpm
+  amazon-linux:
+    name: Build RPM (Amazon Linux 2023)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    container: amazonlinux:2023
+    timeout-minutes: 15
+    steps:
+      - name: Install archive tools
+        run: |
+          dnf install -y \
+            gzip \
+            tar
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: |
+          dnf install -y \
+            autoconf \
+            automake \
+            cmake \
+            gcc \
+            gcc-c++ \
+            make \
+            ninja-build \
+            rpm-build
+      - name: Install Apache Arrow
+        run: |
+          dnf install -y \
+            https://packages.apache.org/artifactory/arrow/amazon-linux/2023/apache-arrow-release-latest.rpm
+      - name: Install Groonga
+        run: |
+          dnf install -y \
+            https://packages.groonga.org/amazon-linux/2023/groonga-release-latest.noarch.rpm
+          dnf install -y groonga groonga-devel
+      - name: Prepare rpmbuild sources
+        run: |
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
+          mkdir -p ~/rpmbuild/{SOURCES,SPECS}
+          tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --exclude=.git --exclude=build --exclude=docker \
+            .
+          cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
+          cp vendor/mecab-ko-dic-2.1.1-20180720.tar.gz ~/rpmbuild/SOURCES/
+          cp rpm/groonga-tokenizer-mecab-ko.spec ~/rpmbuild/SPECS/
+      - name: Build RPM
+        run: |
+          rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpms-amazon-linux-2023
+          path: /tmp/out/*.rpm
+  ubuntu:
+    name: Build deb (Ubuntu)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MECAB_KO_PREFIX: /usr/lib/groonga/tokenizer-mecab-ko
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: |
+          sudo apt install -y -V \
+            autoconf \
+            automake \
+            build-essential \
+            checkinstall \
+            cmake \
+            ninja-build
+      - name: Install Groonga
+        run: |
+          sudo apt install -y -V ca-certificates lsb-release wget
+          wget https://packages.groonga.org/ubuntu/groonga-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt install -y -V \
+            ./groonga-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt update
+          sudo apt install -y -V \
+            groonga \
+            libgroonga-dev
+      - name: Build and install mecab-ko (private prefix)
+        run: |
+          tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
+          mkdir -p mecab-ko.build
+          cd mecab-ko.build
+          ../mecab-0.996-ko-0.9.2/configure \
+            --prefix=${MECAB_KO_PREFIX} \
+            --libdir=${MECAB_KO_PREFIX}/lib \
+            --disable-static
+          make -j$(nproc) > /dev/null
+          sudo make install
+          sudo ldconfig ${MECAB_KO_PREFIX}/lib
+      - name: Build and install mecab-ko-dic (private prefix)
+        run: |
+          export LD_LIBRARY_PATH=${MECAB_KO_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+          export PATH=${MECAB_KO_PREFIX}/bin:${PATH}
+          tar xf vendor/mecab-ko-dic-2.1.1-20180720.tar.gz
+          cd mecab-ko-dic-2.1.1-20180720
+          ./autogen.sh
+          ./configure \
+            --prefix=${MECAB_KO_PREFIX} \
+            --with-mecab-config=${MECAB_KO_PREFIX}/bin/mecab-config \
+            --with-dicdir=${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic
+          make -j$(nproc) > /dev/null
+          sudo make install
+          sudo sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic|" \
+            ${MECAB_KO_PREFIX}/etc/mecabrc
+      - name: Build groonga-tokenizer-mecab-ko
+        run: |
+          GROONGA_CMAKE_DIR=$(dirname $(find /usr -name GroongaConfig.cmake 2>/dev/null | head -1))
+          cmake -S . -B build -GNinja \
+            -DGroonga_DIR=${GROONGA_CMAKE_DIR} \
+            -DMECAB_KO_PRIVATE_PREFIX=${MECAB_KO_PREFIX}
+          cmake --build build
+      - name: Create deb package
+        run: |
+          mkdir -p /tmp/staging
+          cd mecab-ko.build && sudo make install DESTDIR=/tmp/staging && cd ..
+          cd mecab-ko-dic-2.1.1-20180720 && sudo make install DESTDIR=/tmp/staging && cd ..
+          sudo DESTDIR=/tmp/staging cmake --install build
+          sudo sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic|" \
+            /tmp/staging${MECAB_KO_PREFIX}/etc/mecabrc
+          sudo rm -f /tmp/staging${MECAB_KO_PREFIX}/lib/libmecab.la \
+                     /tmp/staging${MECAB_KO_PREFIX}/lib/libmecab.a
+          sudo rm -rf /tmp/staging${MECAB_KO_PREFIX}/bin \
+                      /tmp/staging${MECAB_KO_PREFIX}/include \
+                      /tmp/staging${MECAB_KO_PREFIX}/libexec \
+                      /tmp/staging${MECAB_KO_PREFIX}/share
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
+          sudo checkinstall --pkgname=groonga-tokenizer-mecab-ko \
+            --pkgversion=${VERSION} \
+            --pkgrelease=1~$(lsb_release --codename --short) \
+            --pkglicense=LGPL-2.1 --maintainer=groonga \
+            --requires='groonga' \
+            --nodoc --default --install=yes --fstrans=no \
+            bash -c "cp -a /tmp/staging/* /"
+          cp groonga-tokenizer-mecab-ko_*.deb /tmp/
+      - name: Upload debs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-ubuntu
+          path: /tmp/*.deb
+  debian:
+    name: Build deb (Debian bookworm)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    timeout-minutes: 15
+    env:
+      MECAB_KO_PREFIX: /usr/lib/groonga/tokenizer-mecab-ko
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build dependencies
+        run: |
+          apt update
+          apt install -y -V \
+            autoconf \
+            automake \
+            build-essential \
+            ca-certificates \
+            checkinstall \
+            cmake \
+            ninja-build \
+            wget
+      - name: Install Groonga
+        run: |
+          wget https://packages.groonga.org/debian/groonga-apt-source-latest-bookworm.deb
+          apt install -y -V \
+            ./groonga-apt-source-latest-bookworm.deb
+          apt update
+          apt install -y -V \
+            groonga \
+            libgroonga-dev \
+            libmsgpack-cxx-dev
+      - name: Build and install mecab-ko (private prefix)
+        run: |
+          tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
+          mkdir -p mecab-ko.build
+          cd mecab-ko.build
+          ../mecab-0.996-ko-0.9.2/configure \
+            --prefix=${MECAB_KO_PREFIX} \
+            --libdir=${MECAB_KO_PREFIX}/lib \
+            --disable-static
+          make -j$(nproc) > /dev/null
+          make install
+          ldconfig ${MECAB_KO_PREFIX}/lib
+      - name: Build and install mecab-ko-dic (private prefix)
+        run: |
+          export LD_LIBRARY_PATH=${MECAB_KO_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+          export PATH=${MECAB_KO_PREFIX}/bin:${PATH}
+          tar xf vendor/mecab-ko-dic-2.1.1-20180720.tar.gz
+          cd mecab-ko-dic-2.1.1-20180720
+          ./autogen.sh
+          ./configure \
+            --prefix=${MECAB_KO_PREFIX} \
+            --with-mecab-config=${MECAB_KO_PREFIX}/bin/mecab-config \
+            --with-dicdir=${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic
+          make -j$(nproc) > /dev/null
+          make install
+          sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic|" \
+            ${MECAB_KO_PREFIX}/etc/mecabrc
+      - name: Build groonga-tokenizer-mecab-ko
+        run: |
+          GROONGA_CMAKE_DIR=$(dirname $(find /usr -name GroongaConfig.cmake 2>/dev/null | head -1))
+          cmake -S . -B build -GNinja \
+            -DGroonga_DIR=${GROONGA_CMAKE_DIR} \
+            -DMECAB_KO_PRIVATE_PREFIX=${MECAB_KO_PREFIX}
+          cmake --build build
+      - name: Create deb package
+        run: |
+          mkdir -p /tmp/staging
+          cd mecab-ko.build && make install DESTDIR=/tmp/staging && cd ..
+          cd mecab-ko-dic-2.1.1-20180720 && make install DESTDIR=/tmp/staging && cd ..
+          DESTDIR=/tmp/staging cmake --install build
+          sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_PREFIX}/lib/mecab/dic/mecab-ko-dic|" \
+            /tmp/staging${MECAB_KO_PREFIX}/etc/mecabrc
+          rm -f /tmp/staging${MECAB_KO_PREFIX}/lib/libmecab.la \
+                /tmp/staging${MECAB_KO_PREFIX}/lib/libmecab.a
+          rm -rf /tmp/staging${MECAB_KO_PREFIX}/bin \
+                 /tmp/staging${MECAB_KO_PREFIX}/include \
+                 /tmp/staging${MECAB_KO_PREFIX}/libexec \
+                 /tmp/staging${MECAB_KO_PREFIX}/share
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
+          checkinstall --pkgname=groonga-tokenizer-mecab-ko \
+            --pkgversion=${VERSION} \
+            --pkgrelease=1~bookworm \
+            --pkglicense=LGPL-2.1 --maintainer=groonga \
+            --requires='groonga' \
+            --nodoc --default --install=yes --fstrans=no \
+            bash -c "cp -a /tmp/staging/* /"
+          cp groonga-tokenizer-mecab-ko_*.deb /tmp/
+      - name: Upload debs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-debian-bookworm
+          path: /tmp/*.deb
+  test-almalinux-8:
+    name: Test RPM (AlmaLinux 8)
+    needs: [almalinux-8]
+    runs-on: ubuntu-latest
+    container: almalinux:8
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Groonga
+        run: |
+          dnf install -y epel-release
+          dnf config-manager --set-enabled powertools
+          dnf module reset ruby -y
+          dnf module enable ruby:3.1 -y
+          dnf install -y \
+            https://packages.apache.org/artifactory/arrow/almalinux/8/apache-arrow-release-latest.rpm
+          dnf install -y \
+            https://packages.groonga.org/almalinux/8/groonga-release-latest.noarch.rpm
+          dnf install -y groonga ruby ruby-devel gcc make
+      - name: Download RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rpms-almalinux-8
+          path: packages
+      - name: Install RPM
+        run: |
+          rpm -i packages/*.rpm
+      - name: Install grntest
+        run: |
+          gem install grntest
+      - name: Test
+        run: |
+          BUILD_DIR=/usr/lib64/groonga/plugins bash test/run.sh
+  test-almalinux-9:
+    name: Test RPM (AlmaLinux 9)
+    needs: [almalinux-9]
+    runs-on: ubuntu-latest
+    container: almalinux:9
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Groonga
+        run: |
+          dnf install -y epel-release
+          dnf config-manager --set-enabled crb
+          dnf install -y \
+            https://apache.jfrog.io/artifactory/arrow/almalinux/9/apache-arrow-release-latest.rpm
+          dnf install -y \
+            https://packages.groonga.org/almalinux/9/groonga-release-latest.noarch.rpm
+          dnf install -y groonga ruby ruby-devel gcc make
+      - name: Download RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rpms-almalinux-9
+          path: packages
+      - name: Install RPM
+        run: |
+          rpm -i packages/*.rpm
+      - name: Install grntest
+        run: |
+          gem install grntest
+      - name: Test
+        run: |
+          BUILD_DIR=/usr/lib64/groonga/plugins bash test/run.sh
+  test-amazon-linux:
+    name: Test RPM (Amazon Linux 2023)
+    needs: [amazon-linux]
+    runs-on: ubuntu-latest
+    container: amazonlinux:2023
+    timeout-minutes: 10
+    steps:
+      - name: Install archive tools
+        run: |
+          dnf install -y gzip tar
+      - uses: actions/checkout@v6
+      - name: Install Groonga
+        run: |
+          dnf install -y \
+            https://packages.apache.org/artifactory/arrow/amazon-linux/2023/apache-arrow-release-latest.rpm
+          dnf install -y \
+            https://packages.groonga.org/amazon-linux/2023/groonga-release-latest.noarch.rpm
+          dnf install -y groonga ruby ruby-devel gcc make
+      - name: Download RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rpms-amazon-linux-2023
+          path: packages
+      - name: Install RPM
+        run: |
+          rpm -i packages/*.rpm
+      - name: Install grntest
+        run: |
+          gem install grntest
+      - name: Test
+        run: |
+          BUILD_DIR=/usr/lib64/groonga/plugins bash test/run.sh
+  test-ubuntu:
+    name: Test deb (Ubuntu)
+    needs: [ubuntu]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Groonga
+        run: |
+          sudo apt install -y -V ca-certificates lsb-release wget ruby ruby-dev
+          wget https://packages.groonga.org/ubuntu/groonga-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt install -y -V \
+            ./groonga-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt update
+          sudo apt install -y -V groonga
+      - name: Download deb
+        uses: actions/download-artifact@v4
+        with:
+          name: debs-ubuntu
+          path: packages
+      - name: Install deb
+        run: |
+          sudo dpkg -i packages/*.deb
+      - name: Install grntest
+        run: |
+          sudo gem install grntest
+      - name: Test
+        run: |
+          PLUGINS_DIR=$(pkg-config --variable=pluginsdir groonga 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/groonga/plugins)
+          BUILD_DIR=${PLUGINS_DIR} bash test/run.sh
+  test-debian:
+    name: Test deb (Debian bookworm)
+    needs: [debian]
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Groonga
+        run: |
+          apt update
+          apt install -y -V build-essential ca-certificates ruby ruby-dev wget
+          wget https://packages.groonga.org/debian/groonga-apt-source-latest-bookworm.deb
+          apt install -y -V ./groonga-apt-source-latest-bookworm.deb
+          apt update
+          apt install -y -V groonga
+      - name: Download deb
+        uses: actions/download-artifact@v4
+        with:
+          name: debs-debian-bookworm
+          path: packages
+      - name: Install deb
+        run: |
+          dpkg -i packages/*.deb
+      - name: Install grntest
+        run: |
+          gem install grntest
+      - name: Test
+        run: |
+          PLUGINS_DIR=$(pkg-config --variable=pluginsdir groonga 2>/dev/null || echo /usr/lib/x86_64-linux-gnu/groonga/plugins)
+          BUILD_DIR=${PLUGINS_DIR} bash test/run.sh
+  release:
+    name: Create GitHub Release
+    needs:
+      - test-almalinux-8
+      - test-almalinux-9
+      - test-amazon-linux
+      - test-ubuntu
+      - test-debian
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: packages
+      - name: List packages
+        run: |
+          find packages -type f \( -name '*.rpm' -o -name '*.deb' \) | sort
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          find packages -type f \( -name '*.rpm' -o -name '*.deb' \) \
+            | xargs gh release create "${{ github.ref_name }}" \
+              --title "${{ github.ref_name }}" \
+              --generate-notes

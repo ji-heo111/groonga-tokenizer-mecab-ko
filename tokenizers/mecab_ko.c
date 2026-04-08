@@ -372,7 +372,7 @@ chunked_tokenize_utf8_chunk(grn_ctx *ctx,
 
   tokenized_chunk_length = strlen(tokenized_chunk);
   if (tokenized_chunk_length >= 1 &&
-      isspace((int)tokenized_chunk[tokenized_chunk_length - 1])) {
+      isspace((unsigned char)tokenized_chunk[tokenized_chunk_length - 1])) {
     GRN_TEXT_PUT(ctx,
                  &(tokenizer->buf),
                  tokenized_chunk,
@@ -408,7 +408,7 @@ chunked_tokenize_utf8(grn_ctx *ctx,
     int character_bytes;
     const char *current_character;
 
-    if (isspace((int)current[0])) {
+    if (isspace((unsigned char)current[0])) {
       if (chunk_start != current) {
         bool succeeded =
           chunked_tokenize_utf8_chunk(ctx,
@@ -498,6 +498,7 @@ mecab_ko_model_create(grn_ctx *ctx, grn_mecab_ko_tokenizer_options *options)
     argv[argc++] = "-E\n";
   }
 
+  mecab_model = mecab_model_new(argc, (char **)argv);
   if (!mecab_model) {
     if (need_default_output) {
       GRN_PLUGIN_ERROR(ctx,
@@ -555,7 +556,7 @@ static void
 mecab_ko_next_default_format_skip_eos(grn_ctx *ctx,
                                       grn_mecab_ko_tokenizer *tokenizer)
 {
-  if (tokenizer->next + 4 < tokenizer->end) {
+  if (tokenizer->next + 5 < tokenizer->end) {
     return;
   }
 
@@ -964,7 +965,7 @@ mecab_ko_next_newline_format(grn_ctx *ctx,
   grn_tokenizer_status status;
 
   for (r = p; r < e; r += cl) {
-    if (isspace((int)r[0]) && r == p) {
+    if (isspace((unsigned char)r[0]) && r == p) {
       cl = 1;
       p = r + cl;
       continue;
@@ -1208,12 +1209,14 @@ check_mecab_ko_dictionary_encoding(grn_ctx *ctx)
   }
   mecab = mecab_model_new_tagger(mecab_model);
   if (!mecab) {
+    mecab_model_destroy(mecab_model);
     return;
   }
 
   encoding = GRN_CTX_GET_ENCODING(ctx);
   have_same_encoding_dictionary = (encoding == get_mecab_ko_encoding(mecab));
   mecab_destroy(mecab);
+  mecab_model_destroy(mecab_model);
 
   if (!have_same_encoding_dictionary) {
     GRN_PLUGIN_ERROR(ctx,
