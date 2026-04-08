@@ -59,25 +59,26 @@ jobs:
             groonga \
             libgroonga-dev
       - name: Install mecab-ko and mecab-ko-dic
+        id: mecab-ko
         uses: ./.github/actions/install-mecab-ko
         with:
           use-sudo: "true"
       - name: CMake
         run: |
+          GROONGA_CMAKE_DIR=$(dirname $(find /usr -name GroongaConfig.cmake 2>/dev/null | head -1))
           cmake -S . -B build -GNinja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DGroonga_DIR=${GROONGA_CMAKE_DIR} \
+            -DMECAB_KO_PRIVATE_PREFIX=${{ steps.mecab-ko.outputs.mecab-ko-prefix }}
       - name: Build
         run: |
           cmake --build build
-      - name: Install
-        run: |
-          sudo cmake --install build
       - name: Install grntest
         run: |
           sudo gem install grntest
       - name: Test
         run: |
-          BUILD_DIR="$(pwd)/build" test/run.sh
+          BUILD_DIR="$(pwd)/build" bash test/run.sh
   debian:
     name: Debian bookworm
     runs-on: ubuntu-latest
@@ -117,23 +118,24 @@ jobs:
             groonga \
             libgroonga-dev
       - name: Install mecab-ko and mecab-ko-dic
+        id: mecab-ko
         uses: ./.github/actions/install-mecab-ko
       - name: CMake
         run: |
+          GROONGA_CMAKE_DIR=$(dirname $(find /usr -name GroongaConfig.cmake 2>/dev/null | head -1))
           cmake -S . -B build -GNinja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DGroonga_DIR=${GROONGA_CMAKE_DIR} \
+            -DMECAB_KO_PRIVATE_PREFIX=${{ steps.mecab-ko.outputs.mecab-ko-prefix }}
       - name: Build
         run: |
           cmake --build build
-      - name: Install
-        run: |
-          cmake --install build
       - name: Install grntest
         run: |
           gem install grntest
       - name: Test
         run: |
-          BUILD_DIR="$(pwd)/build" test/run.sh
+          BUILD_DIR="$(pwd)/build" bash test/run.sh
   almalinux-8:
     name: AlmaLinux 8
     runs-on: ubuntu-latest
@@ -181,23 +183,22 @@ jobs:
             https://packages.groonga.org/almalinux/8/groonga-release-latest.noarch.rpm
           dnf install -y groonga groonga-devel
       - name: Install mecab-ko and mecab-ko-dic
+        id: mecab-ko
         uses: ./.github/actions/install-mecab-ko
       - name: CMake
         run: |
           cmake -S . -B build -GNinja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DMECAB_KO_PRIVATE_PREFIX=${{ steps.mecab-ko.outputs.mecab-ko-prefix }}
       - name: Build
         run: |
           cmake --build build
-      - name: Install
-        run: |
-          cmake --install build
       - name: Install grntest
         run: |
           gem install grntest
       - name: Test
         run: |
-          BUILD_DIR="$(pwd)/build" test/run.sh
+          BUILD_DIR="$(pwd)/build" bash test/run.sh
   almalinux-9:
     name: AlmaLinux 9
     runs-on: ubuntu-latest
@@ -238,30 +239,27 @@ jobs:
             https://packages.groonga.org/almalinux/9/groonga-release-latest.noarch.rpm
           dnf install -y groonga groonga-devel
       - name: Install mecab-ko and mecab-ko-dic
+        id: mecab-ko
         uses: ./.github/actions/install-mecab-ko
       - name: CMake
         run: |
           cmake -S . -B build -GNinja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DMECAB_KO_PRIVATE_PREFIX=${{ steps.mecab-ko.outputs.mecab-ko-prefix }}
       - name: Build
         run: |
           cmake --build build
-      - name: Install
-        run: |
-          cmake --install build
       - name: Install grntest
         run: |
           gem install grntest
       - name: Test
         run: |
-          BUILD_DIR="$(pwd)/build" test/run.sh
+          BUILD_DIR="$(pwd)/build" bash test/run.sh
   amazon-linux:
     name: Amazon Linux 2023
     runs-on: ubuntu-latest
     container: amazonlinux:2023
     timeout-minutes: 10
-    env:
-      CCACHE_DIR: ${{ github.workspace }}/cache
     steps:
       - name: Install archive tools
         run: |
@@ -269,18 +267,11 @@ jobs:
             gzip \
             tar
       - uses: actions/checkout@v6
-      - name: Cache ccache
-        uses: actions/cache@v5
-        with:
-          path: cache
-          key: test-amazonlinux-ccache-${{ hashFiles('tokenizers/**') }}
-          restore-keys: test-amazonlinux-ccache-
       - name: Install build dependencies
         run: |
           dnf install -y \
             autoconf \
             automake \
-            ccache \
             cmake \
             gcc \
             gcc-c++ \
@@ -298,20 +289,18 @@ jobs:
             https://packages.groonga.org/amazon-linux/2023/groonga-release-latest.noarch.rpm
           dnf install -y groonga groonga-devel
       - name: Install mecab-ko and mecab-ko-dic
+        id: mecab-ko
         uses: ./.github/actions/install-mecab-ko
       - name: CMake
         run: |
           cmake -S . -B build -GNinja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DMECAB_KO_PRIVATE_PREFIX=${{ steps.mecab-ko.outputs.mecab-ko-prefix }}
       - name: Build
         run: |
           cmake --build build
-      - name: Install
-        run: |
-          cmake --install build
       - name: Install grntest
         run: |
           gem install grntest
       - name: Test
         run: |
-          BUILD_DIR="$(pwd)/build" test/run.sh
+          BUILD_DIR="$(pwd)/build" bash test/run.sh

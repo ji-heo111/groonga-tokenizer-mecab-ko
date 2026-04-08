@@ -1,0 +1,90 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo '(주)카카오에서 "검색엔진"을 만들었다'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "(",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "주",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": ")",
+      "position": 2,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "카카오",
+      "position": 3,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "에서",
+      "position": 4,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "\"",
+      "position": 5,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "검색",
+      "position": 6,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "엔진",
+      "position": 7,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "\"",
+      "position": 8,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "을",
+      "position": 9,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "만들",
+      "position": 10,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "었",
+      "position": 11,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "다",
+      "position": 12,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]

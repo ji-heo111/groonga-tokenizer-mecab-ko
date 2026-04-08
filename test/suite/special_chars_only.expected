@@ -1,0 +1,18 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo '@#$%^&*()'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "@#$%^&*()",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]
