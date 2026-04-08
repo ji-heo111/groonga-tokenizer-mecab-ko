@@ -1,0 +1,40 @@
+name: Install mecab-ko and mecab-ko-dic
+description: Build and install mecab-ko and mecab-ko-dic from vendored sources
+inputs:
+  use-sudo:
+    description: Whether to use sudo for install commands
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Install mecab-ko
+      shell: bash
+      run: |
+        SUDO=""
+        if [ "${{ inputs.use-sudo }}" = "true" ]; then SUDO="sudo"; fi
+        tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
+        mkdir -p mecab-ko.build
+        cd mecab-ko.build
+        ../mecab-0.996-ko-0.9.2/configure --prefix=/usr
+        make -j$(nproc) > /dev/null
+        $SUDO make install
+        if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
+          $SUDO ln -s /usr/lib64/mecab /usr/lib/mecab
+        fi
+        $SUDO ldconfig 2>/dev/null || true
+    - name: Install mecab-ko-dic
+      shell: bash
+      run: |
+        SUDO=""
+        if [ "${{ inputs.use-sudo }}" = "true" ]; then SUDO="sudo"; fi
+        tar xf vendor/mecab-ko-dic-2.1.1-20180720.tar.gz
+        cd mecab-ko-dic-2.1.1-20180720
+        ./autogen.sh
+        ./configure --prefix=/usr
+        make -j$(nproc) > /dev/null
+        $SUDO make install
+        for rc in /usr/etc/mecabrc /etc/mecabrc; do
+          if [ -f "$rc" ]; then
+            $SUDO sed -i 's|^dicdir.*|dicdir = /usr/lib/mecab/dic/mecab-ko-dic|' "$rc"
+          fi
+        done

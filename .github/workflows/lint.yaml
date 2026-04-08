@@ -18,11 +18,9 @@ name: Lint
 on:
   push:
     branches:
-      - "**"
-      - "!dependabot/**"
-    tags:
-      - "**"
+      - main
   pull_request:
+  workflow_call:
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -40,6 +38,7 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-
       - name: Run pre-commit
         run: |
           pre-commit run --show-diff-on-failure --color=always --all-files
