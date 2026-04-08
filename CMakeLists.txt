@@ -43,26 +43,33 @@ endif()
 
 find_package(Groonga REQUIRED)
 
-find_program(MECAB_KO_CONFIG "mecab-config" REQUIRED)
-execute_process(
-    COMMAND ${MECAB_KO_CONFIG} --inc-dir
-    COMMAND_ERROR_IS_FATAL ANY
-    OUTPUT_VARIABLE MECAB_KO_INCLUDE_DIRS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-execute_process(
-    COMMAND ${MECAB_KO_CONFIG} --libs-only-L
-    COMMAND_ERROR_IS_FATAL ANY
-    OUTPUT_VARIABLE MECAB_KO_LIBRARY_DIRS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-find_library(
-    MECAB_KO_LIBRARY
-    NAMES mecab
-    PATHS ${MECAB_KO_LIBRARY_DIRS}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
+if(DEFINED MECAB_KO_PRIVATE_PREFIX)
+    set(MECAB_KO_INCLUDE_DIRS "${MECAB_KO_PRIVATE_PREFIX}/include")
+    set(MECAB_KO_LIBRARY "${MECAB_KO_PRIVATE_PREFIX}/lib/libmecab.so")
+    set(CMAKE_INSTALL_RPATH "${MECAB_KO_PRIVATE_PREFIX}/lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+else()
+    find_program(MECAB_KO_CONFIG "mecab-config" REQUIRED)
+    execute_process(
+        COMMAND ${MECAB_KO_CONFIG} --inc-dir
+        COMMAND_ERROR_IS_FATAL ANY
+        OUTPUT_VARIABLE MECAB_KO_INCLUDE_DIRS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${MECAB_KO_CONFIG} --libs-only-L
+        COMMAND_ERROR_IS_FATAL ANY
+        OUTPUT_VARIABLE MECAB_KO_LIBRARY_DIRS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    find_library(
+        MECAB_KO_LIBRARY
+        NAMES mecab
+        PATHS ${MECAB_KO_LIBRARY_DIRS}
+        REQUIRED
+        NO_DEFAULT_PATH
+    )
+endif()
 
 add_subdirectory(tokenizers)
 
