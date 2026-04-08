@@ -36,8 +36,6 @@ jobs:
         run: |
           dnf install -y epel-release
           dnf config-manager --set-enabled powertools
-          dnf module reset ruby -y
-          dnf module enable ruby:3.1 -y
           dnf install -y \
             autoconf \
             automake \
@@ -47,9 +45,7 @@ jobs:
             gcc-c++ \
             make \
             ninja-build \
-            rpm-build \
-            ruby \
-            ruby-devel
+            rpm-build
       - name: Install newer CMake
         run: |
           curl -sL https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz \
@@ -65,10 +61,10 @@ jobs:
           dnf install -y groonga groonga-devel
       - name: Prepare rpmbuild sources
         run: |
-          VERSION=$(grep 'VERSION' CMakeLists.txt | head -1 | grep -oP '\d+\.\d+\.\d+')
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
           tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
-            --transform "s,^,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
             --exclude=.git --exclude=build --exclude=docker \
             .
           cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
@@ -97,14 +93,11 @@ jobs:
             autoconf \
             automake \
             cmake \
-            curl \
             gcc \
             gcc-c++ \
             make \
             ninja-build \
-            rpm-build \
-            ruby \
-            ruby-devel
+            rpm-build
       - name: Install Apache Arrow
         run: |
           dnf install -y \
@@ -116,10 +109,10 @@ jobs:
           dnf install -y groonga groonga-devel
       - name: Prepare rpmbuild sources
         run: |
-          VERSION=$(grep 'VERSION' CMakeLists.txt | head -1 | grep -oP '\d+\.\d+\.\d+')
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
           tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
-            --transform "s,^,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
             --exclude=.git --exclude=build --exclude=docker \
             .
           cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
@@ -155,9 +148,7 @@ jobs:
             gcc-c++ \
             make \
             ninja-build \
-            rpm-build \
-            ruby \
-            ruby-devel
+            rpm-build
       - name: Install Apache Arrow
         run: |
           dnf install -y \
@@ -169,10 +160,10 @@ jobs:
           dnf install -y groonga groonga-devel
       - name: Prepare rpmbuild sources
         run: |
-          VERSION=$(grep 'VERSION' CMakeLists.txt | head -1 | grep -oP '\d+\.\d+\.\d+')
+          VERSION=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' CMakeLists.txt | head -1)
           mkdir -p ~/rpmbuild/{SOURCES,SPECS}
           tar czf ~/rpmbuild/SOURCES/groonga-tokenizer-mecab-ko-${VERSION}.tar.gz \
-            --transform "s,^,groonga-tokenizer-mecab-ko-${VERSION}/," \
+            --transform "s,^\./,groonga-tokenizer-mecab-ko-${VERSION}/," \
             --exclude=.git --exclude=build --exclude=docker \
             .
           cp vendor/mecab-0.996-ko-0.9.2.tar.gz ~/rpmbuild/SOURCES/
@@ -200,8 +191,7 @@ jobs:
             build-essential \
             checkinstall \
             cmake \
-            ninja-build \
-            ruby-dev
+            ninja-build
       - name: Install Groonga
         run: |
           sudo apt install -y -V ca-certificates lsb-release wget
@@ -217,11 +207,11 @@ jobs:
           tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
           mkdir -p mecab-ko.build
           cd mecab-ko.build
-          ../mecab-0.996-ko-0.9.2/configure --prefix=/usr
+          ../mecab-0.996-ko-0.9.2/configure --prefix=/usr --disable-static
           make -j$(nproc) > /dev/null
           sudo checkinstall --pkgname=mecab-ko --pkgversion=0.996 \
             --pkgrelease=1 --pkglicense=GPL --maintainer=groonga \
-            --nodoc --default --install=yes
+            --nodoc --default --install=yes --fstrans=no
           cp mecab-ko_*.deb /tmp/
       - name: Install mecab-ko-dic
         run: |
@@ -232,7 +222,7 @@ jobs:
           make -j$(nproc) > /dev/null
           sudo checkinstall --pkgname=mecab-ko-dic --pkgversion=2.1.1 \
             --pkgrelease=1 --pkglicense=Apache-2.0 --maintainer=groonga \
-            --requires=mecab-ko --nodoc --default --install=yes
+            --requires=mecab-ko --nodoc --default --install=yes --fstrans=no
           cp mecab-ko-dic_*.deb /tmp/
           sudo sed -i 's|^dicdir.*|dicdir = /usr/lib/mecab/dic/mecab-ko-dic|' \
             /usr/etc/mecabrc /etc/mecabrc 2>/dev/null || true
@@ -244,11 +234,11 @@ jobs:
         run: |
           cd build
           sudo checkinstall --pkgname=groonga-tokenizer-mecab-ko \
-            --pkgversion=$(grep 'VERSION' ../CMakeLists.txt | head -1 | grep -oP '\d+\.\d+\.\d+') \
+            --pkgversion=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' ../CMakeLists.txt | head -1) \
             --pkgrelease=1~$(lsb_release --codename --short) \
             --pkglicense=LGPL-2.1 --maintainer=groonga \
             --requires='groonga,mecab-ko,mecab-ko-dic' \
-            --nodoc --default --install=yes \
+            --nodoc --default --install=yes --fstrans=no \
             cmake --install .
           cp groonga-tokenizer-mecab-ko_*.deb /tmp/
       - name: Upload debs
@@ -274,8 +264,6 @@ jobs:
             checkinstall \
             cmake \
             ninja-build \
-            ruby \
-            ruby-dev \
             wget
       - name: Install Groonga
         run: |
@@ -291,11 +279,11 @@ jobs:
           tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
           mkdir -p mecab-ko.build
           cd mecab-ko.build
-          ../mecab-0.996-ko-0.9.2/configure --prefix=/usr
+          ../mecab-0.996-ko-0.9.2/configure --prefix=/usr --disable-static
           make -j$(nproc) > /dev/null
           checkinstall --pkgname=mecab-ko --pkgversion=0.996 \
             --pkgrelease=1 --pkglicense=GPL --maintainer=groonga \
-            --nodoc --default --install=yes
+            --nodoc --default --install=yes --fstrans=no
           cp mecab-ko_*.deb /tmp/
       - name: Install mecab-ko-dic
         run: |
@@ -306,7 +294,7 @@ jobs:
           make -j$(nproc) > /dev/null
           checkinstall --pkgname=mecab-ko-dic --pkgversion=2.1.1 \
             --pkgrelease=1 --pkglicense=Apache-2.0 --maintainer=groonga \
-            --requires=mecab-ko --nodoc --default --install=yes
+            --requires=mecab-ko --nodoc --default --install=yes --fstrans=no
           cp mecab-ko-dic_*.deb /tmp/
       - name: Build groonga-tokenizer-mecab-ko
         run: |
@@ -316,11 +304,11 @@ jobs:
         run: |
           cd build
           checkinstall --pkgname=groonga-tokenizer-mecab-ko \
-            --pkgversion=$(grep 'VERSION' ../CMakeLists.txt | head -1 | grep -oP '\d+\.\d+\.\d+') \
+            --pkgversion=$(sed -n 's/.*VERSION "\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' ../CMakeLists.txt | head -1) \
             --pkgrelease=1~bookworm \
             --pkglicense=LGPL-2.1 --maintainer=groonga \
             --requires='groonga,mecab-ko,mecab-ko-dic' \
-            --nodoc --default --install=yes \
+            --nodoc --default --install=yes --fstrans=no \
             cmake --install .
           cp groonga-tokenizer-mecab-ko_*.deb /tmp/
       - name: Upload debs

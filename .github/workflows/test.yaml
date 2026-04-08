@@ -77,8 +77,8 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           sudo make install
-          # groonga 패키지가 일본어 사전(mecab-ipadic)을 함께 설치하므로
-          # mecabrc의 dicdir을 mecab-ko-dic으로 덮어씀
+          # groonga installs mecab-ipadic by default,
+          # so override dicdir in mecabrc to use mecab-ko-dic
           sudo sed -i 's|^dicdir.*|dicdir = /usr/lib/mecab/dic/mecab-ko-dic|' \
             /usr/etc/mecabrc /etc/mecabrc 2>/dev/null || true
       - name: CMake
@@ -211,7 +211,7 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           make install
-          # mecabrc의 dicdir(/usr/lib/...)과 실제 설치 경로(/usr/lib64/...)가 다를 수 있음
+          # dicdir in mecabrc (/usr/lib/...) may differ from actual install path (/usr/lib64/...)
           if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
             ln -s /usr/lib64/mecab /usr/lib/mecab
           fi
@@ -245,7 +245,6 @@ jobs:
             autoconf \
             automake \
             cmake \
-            curl \
             gcc \
             gcc-c++ \
             make \
@@ -278,7 +277,7 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           make install
-          # mecabrc의 dicdir(/usr/lib/...)과 실제 설치 경로(/usr/lib64/...)가 다를 수 있음
+          # dicdir in mecabrc (/usr/lib/...) may differ from actual install path (/usr/lib64/...)
           if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
             ln -s /usr/lib64/mecab /usr/lib/mecab
           fi
@@ -347,7 +346,7 @@ jobs:
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           make install
-          # mecabrc의 dicdir(/usr/lib/...)과 실제 설치 경로(/usr/lib64/...)가 다를 수 있음
+          # dicdir in mecabrc (/usr/lib/...) may differ from actual install path (/usr/lib64/...)
           if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
             ln -s /usr/lib64/mecab /usr/lib/mecab
           fi
