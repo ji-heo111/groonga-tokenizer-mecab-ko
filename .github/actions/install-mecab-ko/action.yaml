@@ -1,40 +1,56 @@
 name: Install mecab-ko and mecab-ko-dic
-description: Build and install mecab-ko and mecab-ko-dic from vendored sources
+description: Build and install mecab-ko and mecab-ko-dic to a private prefix
 inputs:
   use-sudo:
     description: Whether to use sudo for install commands
     default: "false"
+outputs:
+  mecab-ko-prefix:
+    description: The private prefix where mecab-ko was installed
+    value: ${{ steps.detect.outputs.prefix }}
 runs:
   using: composite
   steps:
+    - name: Detect private prefix
+      id: detect
+      shell: bash
+      run: |
+        LIBDIR=$(rpm --eval '%{_libdir}' 2>/dev/null || echo /usr/lib)
+        PREFIX=${LIBDIR}/groonga/tokenizer-mecab-ko
+        echo "libdir=${LIBDIR}" >> "$GITHUB_OUTPUT"
+        echo "prefix=${PREFIX}" >> "$GITHUB_OUTPUT"
     - name: Install mecab-ko
       shell: bash
       run: |
         SUDO=""
         if [ "${{ inputs.use-sudo }}" = "true" ]; then SUDO="sudo"; fi
+        PREFIX="${{ steps.detect.outputs.prefix }}"
         tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
         mkdir -p mecab-ko.build
         cd mecab-ko.build
-        ../mecab-0.996-ko-0.9.2/configure --prefix=/usr
+        ../mecab-0.996-ko-0.9.2/configure \
+          --prefix=${PREFIX} \
+          --libdir=${PREFIX}/lib \
+          --disable-static
         make -j$(nproc) > /dev/null
         $SUDO make install
-        if [ ! -d /usr/lib/mecab ] && [ -d /usr/lib64/mecab ]; then
-          $SUDO ln -s /usr/lib64/mecab /usr/lib/mecab
-        fi
-        $SUDO ldconfig 2>/dev/null || true
+        $SUDO ldconfig ${PREFIX}/lib 2>/dev/null || true
     - name: Install mecab-ko-dic
       shell: bash
       run: |
         SUDO=""
         if [ "${{ inputs.use-sudo }}" = "true" ]; then SUDO="sudo"; fi
+        PREFIX="${{ steps.detect.outputs.prefix }}"
+        export LD_LIBRARY_PATH=${PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+        export PATH=${PREFIX}/bin:${PATH}
         tar xf vendor/mecab-ko-dic-2.1.1-20180720.tar.gz
         cd mecab-ko-dic-2.1.1-20180720
         ./autogen.sh
-        ./configure --prefix=/usr
+        ./configure \
+          --prefix=${PREFIX} \
+          --with-mecab-config=${PREFIX}/bin/mecab-config \
+          --with-dicdir=${PREFIX}/lib/mecab/dic/mecab-ko-dic
         make -j$(nproc) > /dev/null
         $SUDO make install
-        for rc in /usr/etc/mecabrc /etc/mecabrc; do
-          if [ -f "$rc" ]; then
-            $SUDO sed -i 's|^dicdir.*|dicdir = /usr/lib/mecab/dic/mecab-ko-dic|' "$rc"
-          fi
-        done
+        $SUDO sed -i "s|^dicdir.*|dicdir = ${PREFIX}/lib/mecab/dic/mecab-ko-dic|" \
+          ${PREFIX}/etc/mecabrc

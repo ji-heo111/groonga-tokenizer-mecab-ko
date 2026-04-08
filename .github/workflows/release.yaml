@@ -74,11 +74,13 @@ jobs:
       - name: Build RPM
         run: |
           rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
           name: rpms-almalinux-8
-          path: ~/rpmbuild/RPMS/**/*.rpm
+          path: /tmp/out/*.rpm
   almalinux-9:
     name: Build RPM (AlmaLinux 9)
     needs: [lint]
@@ -123,11 +125,13 @@ jobs:
       - name: Build RPM
         run: |
           rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
           name: rpms-almalinux-9
-          path: ~/rpmbuild/RPMS/**/*.rpm
+          path: /tmp/out/*.rpm
   amazon-linux:
     name: Build RPM (Amazon Linux 2023)
     needs: [lint]
@@ -175,11 +179,13 @@ jobs:
       - name: Build RPM
         run: |
           rpmbuild -ba ~/rpmbuild/SPECS/groonga-tokenizer-mecab-ko.spec
+          mkdir -p /tmp/out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /tmp/out/ \;
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
           name: rpms-amazon-linux-2023
-          path: ~/rpmbuild/RPMS/**/*.rpm
+          path: /tmp/out/*.rpm
   ubuntu:
     name: Build deb (Ubuntu)
     needs: [lint]
@@ -300,7 +306,8 @@ jobs:
           apt update
           apt install -y -V \
             groonga \
-            libgroonga-dev
+            libgroonga-dev \
+            libmsgpack-cxx-dev
       - name: Build and install mecab-ko (private prefix)
         run: |
           tar xf vendor/mecab-0.996-ko-0.9.2.tar.gz
@@ -500,7 +507,7 @@ jobs:
       - name: Install Groonga
         run: |
           apt update
-          apt install -y -V ca-certificates ruby ruby-dev wget
+          apt install -y -V build-essential ca-certificates ruby ruby-dev wget
           wget https://packages.groonga.org/debian/groonga-apt-source-latest-bookworm.deb
           apt install -y -V ./groonga-apt-source-latest-bookworm.deb
           apt update
