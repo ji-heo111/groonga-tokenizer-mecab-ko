@@ -26,6 +26,9 @@ target_include_directories(
     PRIVATE ${MECAB_KO_INCLUDE_DIRS}
 )
 target_link_libraries(groonga_tokenizer_mecab_ko PRIVATE ${MECAB_KO_LIBRARY})
+if(DEFINED MECAB_KO_PRIVATE_PREFIX)
+    add_dependencies(groonga_tokenizer_mecab_ko mecab_ko_dic_external)
+endif()
 install(
     TARGETS groonga_tokenizer_mecab_ko
     DESTINATION "${GRN_PLUGINS_DIR}/tokenizers"
