@@ -63,32 +63,38 @@ if(DEFINED MECAB_KO_PRIVATE_PREFIX)
     set(CMAKE_INSTALL_RPATH "${MECAB_KO_PRIVATE_PREFIX}/lib")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
-    ExternalProject_Add(mecab_ko_external
-        URL https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz
+    ExternalProject_Add(
+        mecab_ko_external
+        URL
+            https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz
         PREFIX ${CMAKE_BINARY_DIR}/mecab-ko
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure
-            --prefix=${MECAB_KO_PRIVATE_PREFIX}
-            --libdir=${MECAB_KO_PRIVATE_PREFIX}/lib
-            --disable-static
+        CONFIGURE_COMMAND
+            <SOURCE_DIR>/configure --prefix=${MECAB_KO_PRIVATE_PREFIX}
+            --libdir=${MECAB_KO_PRIVATE_PREFIX}/lib --disable-static
         BUILD_COMMAND make -j${NPROC}
         INSTALL_COMMAND make install
-            COMMAND ldconfig ${MECAB_KO_PRIVATE_PREFIX}/lib || true
+        COMMAND ldconfig ${MECAB_KO_PRIVATE_PREFIX}/lib || true
         BUILD_IN_SOURCE FALSE
     )
 
-    ExternalProject_Add(mecab_ko_dic_external
-        URL https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz
+    ExternalProject_Add(
+        mecab_ko_dic_external
+        URL
+            https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz
         PREFIX ${CMAKE_BINARY_DIR}/mecab-ko-dic
         DEPENDS mecab_ko_external
-        CONFIGURE_COMMAND sh -c
+        CONFIGURE_COMMAND
+            sh -c
             "cd <SOURCE_DIR> && ./autogen.sh && ./configure --prefix=${MECAB_KO_PRIVATE_PREFIX} --with-mecab-config=${MECAB_KO_PRIVATE_PREFIX}/bin/mecab-config --with-dicdir=${MECAB_KO_PRIVATE_PREFIX}/lib/mecab/dic/mecab-ko-dic"
-        BUILD_COMMAND ${CMAKE_COMMAND} -E env
+        BUILD_COMMAND
+            ${CMAKE_COMMAND} -E env
             LD_LIBRARY_PATH=${MECAB_KO_PRIVATE_PREFIX}/lib
-            PATH=${MECAB_KO_PRIVATE_PREFIX}/bin:$ENV{PATH}
-            make -j${NPROC}
+            PATH=${MECAB_KO_PRIVATE_PREFIX}/bin:$ENV{PATH} make -j${NPROC}
         INSTALL_COMMAND make install
-            COMMAND sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_PRIVATE_PREFIX}/lib/mecab/dic/mecab-ko-dic|"
-                ${MECAB_KO_PRIVATE_PREFIX}/etc/mecabrc
+        COMMAND
+            sed -i
+            "s|^dicdir.*|dicdir = ${MECAB_KO_PRIVATE_PREFIX}/lib/mecab/dic/mecab-ko-dic|"
+            ${MECAB_KO_PRIVATE_PREFIX}/etc/mecabrc
         BUILD_IN_SOURCE TRUE
     )
 else()
