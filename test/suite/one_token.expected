@@ -9,8 +9,20 @@ tokenize TokenMeCabKo '안녕하세요'
   ],
   [
     {
-      "value": "안녕하세요",
+      "value": "안녕",
       "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "하",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "세요",
+      "position": 2,
       "force_prefix": false,
       "force_prefix_search": false
     }

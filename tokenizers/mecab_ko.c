@@ -498,6 +498,7 @@ mecab_ko_model_create(grn_ctx *ctx, grn_mecab_ko_tokenizer_options *options)
     argv[argc++] = "-E\n";
   }
 
+  mecab_model = mecab_model_new(argc, (char **)argv);
   if (!mecab_model) {
     if (need_default_output) {
       GRN_PLUGIN_ERROR(ctx,

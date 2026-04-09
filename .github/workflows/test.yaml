@@ -18,7 +18,10 @@ name: Test
 on:
   push:
     branches:
-      - main
+      - "**"
+      - "!dependabot/**"
+    tags:
+      - "**"
   pull_request:
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
