@@ -58,20 +58,25 @@ jobs:
             groonga
       - name: Install mecab-ko
         run: |
-          git clone --depth 1 https://bitbucket.org/eunjeon/mecab-ko.git
-          mkdir -p mecab-ko.build
-          cd mecab-ko.build
-          ../mecab-ko/configure --prefix=/usr
+          curl \
+            --fail \
+            --location \
+            --output mecab-ko.tar.gz \
+            "https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz"
+          tar xf mecab-ko.tar.gz
+          cd mecab-0.996-ko-0.9.2
+          ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
           sudo make install
       - name: Install mecab-ko-dic
         run: |
-          wget \
-            --no-verbose \
-            --output-document mecab-ko-dic.tar.gz \
-            "https://drive.usercontent.google.com/download?id=1rzCAlJ6YvJBAX9aRcIJjF7DCTD6UyEcZ&export=download&confirm=t"
+          curl \
+            --fail \
+            --location \
+            --output mecab-ko-dic.tar.gz \
+            "https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz"
           tar xf mecab-ko-dic.tar.gz
-          cd mecab-ko-dic-*
+          cd mecab-ko-dic-2.1.1-20180720
           ./autogen.sh
           ./configure --prefix=/usr
           make -j$(nproc) > /dev/null
