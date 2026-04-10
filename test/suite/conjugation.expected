@@ -1,0 +1,54 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo '맛있는 떡볶이를 먹었다'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "맛있",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "는",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "떡볶이",
+      "position": 2,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "를",
+      "position": 3,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "먹",
+      "position": 4,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "었",
+      "position": 5,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "다",
+      "position": 6,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]

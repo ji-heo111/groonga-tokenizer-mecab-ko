@@ -1,0 +1,60 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo '첫번째줄\n두번째줄'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "첫",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "번",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "째",
+      "position": 2,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "줄",
+      "position": 3,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "두",
+      "position": 4,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "번",
+      "position": 5,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "째",
+      "position": 6,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "줄",
+      "position": 7,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]

@@ -1,0 +1,30 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo 'ㅋㅋㅋ ㅎㅎ ㅠㅠ'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "ㅋㅋㅋ",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "ㅎㅎ",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "ㅠㅠ",
+      "position": 2,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]

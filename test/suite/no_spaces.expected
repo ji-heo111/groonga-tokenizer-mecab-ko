@@ -1,0 +1,48 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo '아버지가방에들어가신다'
+[
+  [
+    0,
+    0.0,
+    0.0
+  ],
+  [
+    {
+      "value": "아버지",
+      "position": 0,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "가",
+      "position": 1,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "방",
+      "position": 2,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "에",
+      "position": 3,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "들어가",
+      "position": 4,
+      "force_prefix": false,
+      "force_prefix_search": false
+    },
+    {
+      "value": "신다",
+      "position": 5,
+      "force_prefix": false,
+      "force_prefix_search": false
+    }
+  ]
+]

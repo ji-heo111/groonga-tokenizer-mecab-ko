@@ -1,0 +1,5 @@
+plugin_register tokenizers/mecab_ko
+[[0,0.0,0.0],true]
+tokenize TokenMeCabKo ''
+[[[-22,0.0,0.0],"[tokenize] string is missing"]]
+#|e| [tokenize] string is missing
