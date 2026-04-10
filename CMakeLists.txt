@@ -19,6 +19,11 @@ cmake_minimum_required(VERSION 3.22)
 
 message(STATUS "CMake: ${CMAKE_VERSION}")
 
+# https://cmake.org/cmake/help/latest/policy/CMP0077.html
+#
+# option() honors normal variables.
+cmake_policy(SET CMP0077 NEW)
+
 project(
     groonga-tokenizer-mecab-ko
     VERSION "1.0.0"
@@ -40,58 +45,21 @@ if(NOT DEFINED GROONGA_TOKENIZER_MECAB_KO_DOC_DIR)
         "${CMAKE_INSTALL_DOCDIR}/${PROJECT_NAME}"
     )
 endif()
+if(NOT DEFINED GROONGA_TOKENIZER_MECAB_KO_LIB_DIR)
+    set(GROONGA_TOKENIZER_MECAB_KO_LIB_DIR
+        "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}"
+    )
+endif()
+if(NOT DEFINED GROONGA_TOKENIZER_MECAB_KO_SYSCONF_DIR)
+    set(GROONGA_TOKENIZER_MECAB_KO_SYSCONF_DIR
+        "${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}"
+    )
+endif()
 
 find_package(Groonga REQUIRED)
 
-if(DEFINED MECAB_KO_PRIVATE_PREFIX)
-    include(ExternalProject)
-    include(ProcessorCount)
-    ProcessorCount(NPROC)
-    if(NPROC EQUAL 0)
-        set(NPROC 1)
-    endif()
-
-    set(MECAB_KO_INCLUDE_DIRS "${MECAB_KO_PRIVATE_PREFIX}/include")
-    set(MECAB_KO_LIBRARY "${MECAB_KO_PRIVATE_PREFIX}/lib/libmecab.a")
-    set(MECAB_KO_RC_PATH "${MECAB_KO_PRIVATE_PREFIX}/etc/mecabrc")
-    set(MECAB_KO_DIC_DIR
-        "${MECAB_KO_PRIVATE_PREFIX}/lib/mecab/dic/mecab-ko-dic"
-    )
-
-    ExternalProject_Add(
-        mecab_ko_external
-        URL
-            https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz
-        PREFIX ${CMAKE_BINARY_DIR}/mecab-ko
-        CONFIGURE_COMMAND
-            <SOURCE_DIR>/configure --prefix=${MECAB_KO_PRIVATE_PREFIX}
-            --enable-static --disable-shared --with-pic
-        BUILD_COMMAND make -j${NPROC}
-        INSTALL_COMMAND make install
-        BUILD_IN_SOURCE FALSE
-        BUILD_BYPRODUCTS ${MECAB_KO_LIBRARY}
-    )
-
-    ExternalProject_Add(
-        mecab_ko_dic_external
-        URL
-            https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz
-        PREFIX ${CMAKE_BINARY_DIR}/mecab-ko-dic
-        DEPENDS mecab_ko_external
-        CONFIGURE_COMMAND
-            sh -c
-            "cd <SOURCE_DIR> && ./autogen.sh && ./configure --prefix=${MECAB_KO_PRIVATE_PREFIX} --with-mecab-config=${MECAB_KO_PRIVATE_PREFIX}/bin/mecab-config --with-dicdir=${MECAB_KO_DIC_DIR}"
-        BUILD_COMMAND
-            ${CMAKE_COMMAND} -E env
-            PATH=${MECAB_KO_PRIVATE_PREFIX}/bin:$ENV{PATH} make -j${NPROC}
-        INSTALL_COMMAND make install
-        COMMAND
-            sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_DIC_DIR}|"
-            ${MECAB_KO_RC_PATH}
-        BUILD_IN_SOURCE TRUE
-    )
-else()
-    find_program(MECAB_KO_CONFIG "mecab-config" REQUIRED)
+find_program(MECAB_KO_CONFIG "mecab-config")
+if(MECAB_KO_CONFIG AND EXISTS ${MECAB_KO_CONFIG})
     execute_process(
         COMMAND ${MECAB_KO_CONFIG} --inc-dir
         COMMAND_ERROR_IS_FATAL ANY
@@ -110,6 +78,127 @@ else()
         PATHS ${MECAB_KO_LIBRARY_DIRS}
         REQUIRED
         NO_DEFAULT_PATH
+    )
+    add_library(libmecab_ko INTERFACE)
+    target_include_directories(
+        libmecab_ko
+        SYSTEM
+        INTERFACE ${MECAB_KO_INCLUDE_DIRS}
+    )
+    target_link_libraries(libmecab_ko INTERFACE ${MECAB_KO_LIBRARY})
+else()
+    include(ExternalProject)
+    include(ProcessorCount)
+    ProcessorCount(NPROC)
+    if(NPROC EQUAL 0)
+        set(NPROC 1)
+    endif()
+
+    set(MECAB_KO_LIBRARY_RELATIVE
+        "lib/${CMAKE_STATIC_LIBRARY_PREFIX}mecab${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    )
+    ExternalProject_Add(
+        mecab_ko_external
+        URL
+            https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz
+        CONFIGURE_COMMAND
+            <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --enable-static
+            --disable-shared --with-pic
+        BUILD_COMMAND make -j${NPROC}
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE FALSE
+        BUILD_BYPRODUCTS <INSTALL_DIR>/${MECAB_KO_LIBRARY_RELATIVE}
+    )
+    ExternalProject_Get_Property(mecab_ko_external SOURCE_DIR)
+    set(MECAB_KO_SOURCE_DIR ${SOURCE_DIR})
+    ExternalProject_Get_Property(mecab_ko_external INSTALL_DIR)
+    set(MECAB_KO_INSTALL_DIR ${INSTALL_DIR})
+    install(
+        FILES
+            ${MECAB_KO_SOURCE_DIR}/AUTHORS
+            ${MECAB_KO_SOURCE_DIR}/BSD
+            ${MECAB_KO_SOURCE_DIR}/COPYING
+            ${MECAB_KO_SOURCE_DIR}/GPL
+            ${MECAB_KO_SOURCE_DIR}/LGPL
+        DESTINATION "${GROONGA_TOKENIZER_MECAB_KO_DOC_DIR}/mecab-ko"
+    )
+
+    set(MECAB_KO_RC_PATH "${GROONGA_TOKENIZER_MECAB_KO_SYSCONF_DIR}/mecabrc")
+    if(IS_ABSOLUTE ${MECAB_KO_RC_PATH})
+        set(MECAB_KO_RC_PATH_ABSOLUTE ${MECAB_KO_RC_PATH})
+    else()
+        set(MECAB_KO_RC_PATH_ABSOLUTE)
+        cmake_path(
+            APPEND MECAB_KO_RC_PATH_ABSOLUTE
+            ${CMAKE_INSTALL_PREFIX}
+            ${MECAB_KO_RC_PATH}
+        )
+    endif()
+    set(MECAB_KO_DIC_DIR
+        "${GROONGA_TOKENIZER_MECAB_KO_LIB_DIR}/dic/mecab-ko-dic"
+    )
+
+    add_library(libmecab_ko INTERFACE)
+    target_include_directories(
+        libmecab_ko
+        INTERFACE ${MECAB_KO_INSTALL_DIR}/include
+    )
+    find_package(Threads REQUIRED)
+    target_link_libraries(
+        libmecab_ko
+        INTERFACE
+            ${MECAB_KO_INSTALL_DIR}/${MECAB_KO_LIBRARY_RELATIVE}
+            Threads::Threads
+    )
+    target_compile_definitions(
+        libmecab_ko
+        INTERFACE
+            GRN_WITH_BUNDLED_MECAB_KO
+            GRN_BUNDLED_MECAB_KO_RC_PATH="${MECAB_KO_RC_PATH_ABSOLUTE}"
+    )
+
+    ExternalProject_Add(
+        mecab_ko_dic_external
+        URL
+            https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz
+        DEPENDS mecab_ko_external
+        PATCH_COMMAND ./autogen.sh
+        CONFIGURE_COMMAND
+            ./configure --prefix=<INSTALL_DIR>
+            --with-mecab-config=${MECAB_KO_INSTALL_DIR}/bin/mecab-config
+        BUILD_COMMAND make -j${NPROC}
+        BUILD_IN_SOURCE TRUE
+        INSTALL_COMMAND make install
+    )
+    ExternalProject_Get_Property(mecab_ko_dic_external SOURCE_DIR)
+    set(MECAB_KO_DIC_SOURCE_DIR ${SOURCE_DIR})
+    install(
+        FILES
+            ${MECAB_KO_DIC_SOURCE_DIR}/AUTHORS
+            ${MECAB_KO_DIC_SOURCE_DIR}/COPYING
+        DESTINATION "${GROONGA_TOKENIZER_MECAB_KO_DOC_DIR}/mecab-ko-dic"
+    )
+
+    add_dependencies(libmecab_ko mecab_ko_dic_external)
+
+    if(IS_ABSOLUTE ${MECAB_KO_DIC_DIR})
+        set(MECAB_KO_DIC_DIR_ABSOLUTE ${MECAB_KO_DIC_DIR})
+    else()
+        set(MECAB_KO_DIC_DIR_ABSOLUTE)
+        cmake_path(
+            APPEND MECAB_KO_DIC_DIR_ABSOLUTE
+            ${CMAKE_INSTALL_PREFIX}
+            ${MECAB_KO_DIC_DIR}
+        )
+    endif()
+    configure_file(mecabrc.in mecabrc @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/mecabrc
+        DESTINATION "${GROONGA_TOKENIZER_MECAB_KO_SYSCONF_DIR}"
+    )
+    install(
+        DIRECTORY ${MECAB_KO_INSTALL_DIR}/lib/mecab/dic/mecab-ko-dic
+        DESTINATION "${MECAB_KO_DIC_DIR}/.."
     )
 endif()
 

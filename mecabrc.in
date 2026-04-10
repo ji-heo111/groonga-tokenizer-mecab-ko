@@ -14,16 +14,4 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-add_library(groonga_tokenizer_mecab_ko MODULE mecab_ko.c)
-set_target_properties(
-    groonga_tokenizer_mecab_ko
-    PROPERTIES PREFIX "" OUTPUT_NAME "mecab_ko"
-)
-target_link_libraries(
-    groonga_tokenizer_mecab_ko
-    PRIVATE Groonga::libgroonga libmecab_ko
-)
-install(
-    TARGETS groonga_tokenizer_mecab_ko
-    DESTINATION "${GRN_PLUGINS_DIR}/tokenizers"
-)
+dicdir = @MECAB_KO_DIC_DIR_ABSOLUTE@
