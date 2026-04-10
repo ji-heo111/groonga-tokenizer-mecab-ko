@@ -35,9 +35,7 @@ if(DEFINED MECAB_KO_PRIVATE_PREFIX)
             GRN_BUNDLED_MECAB_KO_RC_PATH="${MECAB_KO_RC_PATH}"
     )
     find_package(Threads REQUIRED)
-    target_link_libraries(
-        groonga_tokenizer_mecab_ko PRIVATE Threads::Threads
-    )
+    target_link_libraries(groonga_tokenizer_mecab_ko PRIVATE Threads::Threads)
 endif()
 install(
     TARGETS groonga_tokenizer_mecab_ko

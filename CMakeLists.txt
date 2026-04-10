@@ -65,7 +65,7 @@ if(DEFINED MECAB_KO_PRIVATE_PREFIX)
         PREFIX ${CMAKE_BINARY_DIR}/mecab-ko
         CONFIGURE_COMMAND
             <SOURCE_DIR>/configure --prefix=${MECAB_KO_PRIVATE_PREFIX}
-            --enable-static --disable-shared
+            --enable-static --disable-shared --with-pic
         BUILD_COMMAND make -j${NPROC}
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE FALSE
@@ -86,8 +86,7 @@ if(DEFINED MECAB_KO_PRIVATE_PREFIX)
             PATH=${MECAB_KO_PRIVATE_PREFIX}/bin:$ENV{PATH} make -j${NPROC}
         INSTALL_COMMAND make install
         COMMAND
-            sed -i
-            "s|^dicdir.*|dicdir = ${MECAB_KO_DIC_DIR}|"
+            sed -i "s|^dicdir.*|dicdir = ${MECAB_KO_DIC_DIR}|"
             ${MECAB_KO_RC_PATH}
         BUILD_IN_SOURCE TRUE
     )
